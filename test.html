@@ -1,1 +1,180 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Kids Watercolor Painting</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 10px;
+            overscroll-behavior: none; /* Prevent pull-to-refresh */
+            touch-action: manipulation; /* Improve touch responsiveness */
+        }
+        h1 {
+            color: #ff69b4;
+            font-size: 2em;
+            margin: 10px 0;
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            cursor: crosshair;
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+        .controls {
+            margin: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        button, select, input {
+            padding: 8px;
+            margin: 5px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            cursor: pointer;
+            touch-action: manipulation; /* Prevent double-tap zoom */
+        }
+        button {
+            background-color: #ff4500;
+            color: white;
+            border: none;
+            min-width: 100px;
+        }
+        button:hover {
+            background-color: #ff6347;
+        }
+        select, input[type="range"] {
+            background-color: #98fb98;
+            min-width: 100px;
+        }
+        /* Ensure canvas fits smaller screens */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            button, select, input {
+                font-size: 0.9em;
+                padding: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Watercolor Painting Fun!</h1>
+    <canvas id="paintingCanvas"></canvas>
+    <div class="controls">
+        <label for="colorPicker">Color: </label>
+        <select id="colorPicker">
+            <option value="rgba(255, 0, 0, 0.3)">Red</option>
+            <option value="rgba(0, 0, 255, 0.3)">Blue</option>
+            <option value="rgba(0, 128, 0, 0.3)">Green</option>
+            <option value="rgba(255, 255, 0, 0.3)">Yellow</option>
+            <option value="rgba(128, 0, 128, 0.3)">Purple</option>
+            <option value="rgba(255, 165, 0, 0.3)">Orange</option>
+        </select>
+        <label for="brushSize">Brush: </label>
+        <input type="range" id="brushSize" min="5" max="30" value="15">
+        <button onclick="clearCanvas()">Clear</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('paintingCanvas');
+        const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: false });
+        let painting = false;
+        let lastX = 0, lastY = 0;
+
+        // Set canvas size to fit device
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = Math.min(rect.width * 1.2, window.innerHeight - 150) * dpr;
+            ctx.scale(dpr, dpr); // Adjust for high-DPI screens
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Prevent default touch behaviors
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.tagName !== 'CANVAS') return;
+            e.preventDefault();
+        }, { passive: false });
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.tagName !== 'CANVAS') return;
+            e.preventDefault();
+        }, { passive: false });
+
+        // Start painting
+        canvas.addEventListener('touchstart', (e) => {
+            painting = true;
+            const touch = e.touches[0];
+            lastX = (touch.clientX - canvas.getBoundingClientRect().left) * (canvas.width / canvas.getBoundingClientRect().width);
+            lastY = (touch.clientY - canvas.getBoundingClientRect().top) * (canvas.height / canvas.getBoundingClientRect().height);
+        });
+
+        // Draw on touchmove
+        canvas.addEventListener('touchmove', (e) => {
+            if (!painting) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const x = (touch.clientX - canvas.getBoundingClientRect().left) * (canvas.width / canvas.getBoundingClientRect().width);
+            const y = (touch.clientY - canvas.getBoundingClientRect().top) * (canvas.height / canvas.getBoundingClientRect().height);
+            draw(x, y);
+        });
+
+        // Stop painting
+        canvas.addEventListener('touchend', () => {
+            painting = false;
+            ctx.beginPath();
+        });
+
+        function draw(x, y) {
+            const color = document.getElementById('colorPicker').value;
+            const brushSize = document.getElementById('brushSize').value;
+
+            ctx.lineWidth = brushSize;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = color;
+
+            // Smooth line drawing
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // Watercolor effect: reduced for performance
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(x + (Math.random() - 0.5) * brushSize / 2,
+                        y + (Math.random() - 0.5) * brushSize / 2,
+                        brushSize / 4, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+
+            lastX = x;
+            lastY = y;
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Prevent context menu on long press
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    </script>
+</body>
+</html>
