@@ -1,343 +1,404 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alphabet Learning</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        h1 {
-            color: white;
-            font-size: 3em;
-            margin-bottom: 30px;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
-            animation: bounce 2s infinite;
-        }
-        
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .alphabet-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 15px;
-            max-width: 900px;
-            width: 100%;
-            margin-bottom: 40px;
-        }
-        
-        .letter-btn {
-            background: linear-gradient(145deg, #ffffff, #f0f0f0);
-            border: none;
-            border-radius: 20px;
-            padding: 25px;
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #667eea;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .letter-btn:hover {
-            transform: scale(1.1);
-            background: linear-gradient(145deg, #ffd700, #ffed4e);
-            box-shadow: 5px 5px 25px rgba(255,215,0,0.5);
-        }
-        
-        .letter-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .recording-controls {
-            background: white;
-            padding: 30px;
-            border-radius: 25px;
-            box-shadow: 5px 5px 20px rgba(0,0,0,0.3);
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .control-btn {
-            padding: 20px 40px;
-            font-size: 1.2em;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
-        }
-        
-        .record-btn {
-            background: linear-gradient(145deg, #ff6b6b, #ee5a52);
-            color: white;
-        }
-        
-        .record-btn:hover {
-            background: linear-gradient(145deg, #ff5252, #e63946);
-            transform: scale(1.05);
-        }
-        
-        .record-btn.recording {
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        
-        .play-btn {
-            background: linear-gradient(145deg, #51cf66, #37b24d);
-            color: white;
-        }
-        
-        .play-btn:hover:not(:disabled) {
-            background: linear-gradient(145deg, #37b24d, #2b8a3e);
-            transform: scale(1.05);
-        }
-        
-        .play-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .status {
-            font-size: 1.1em;
-            color: #667eea;
-            font-weight: bold;
-        }
-        
-        .progress-container {
-            width: 100%;
-            max-width: 400px;
-            height: 30px;
-            background: #e9ecef;
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-            display: none;
-        }
-        
-        .progress-container.active {
-            display: block;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #51cf66, #37b24d);
-            width: 0%;
-            transition: width 0.1s linear;
-            border-radius: 15px;
-        }
-        
-        .progress-bar.recording {
-            background: linear-gradient(90deg, #ff6b6b, #ee5a52);
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kids Watercolor Paint</title>
+<style>
+  :root{
+    --panel-bg: #fffef6;
+    --accent: #7aa2ff;
+    --shadow: rgba(20,20,20,0.12);
+    font-family: "Comic Sans MS", "Marker Felt", "Trebuchet MS", Arial, sans-serif;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(#f3efe9,#f8f6f2);}
+  .app {
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    gap:8px;
+    padding:10px;
+    box-sizing:border-box;
+  }
+  header {
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  h1 {
+    margin:0;font-size:20px;
+  }
+  .toolbar {
+    display:flex;
+    gap:10px;
+    align-items:center;
+    background:var(--panel-bg);
+    padding:8px;
+    border-radius:10px;
+    box-shadow:0 6px 18px var(--shadow);
+    flex-wrap:wrap;
+  }
+  .palette { display:flex; gap:6px; align-items:center; }
+  .color {
+    width:36px;height:36px;border-radius:8px;border:2px solid rgba(255,255,255,0.7);
+    box-shadow:0 3px 6px rgba(0,0,0,0.12);
+    cursor:pointer; outline:0;
+  }
+  .color.selected { transform:scale(1.08); box-shadow:0 6px 12px rgba(0,0,0,0.18); }
+  label{font-size:13px;color:#333}
+  .controls{display:flex;gap:10px;align-items:center}
+  input[type=range]{width:120px}
+  button {
+    background:linear-gradient(#fff,#f2f2f2);
+    border:1px solid #e2e2e2;
+    padding:8px 10px;border-radius:8px;cursor:pointer;
+    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+    font-weight:700;
+  }
+  button:active{transform:translateY(1px)}
+  .canvas-wrap{
+    position:relative; flex:1; display:flex; border-radius:12px; overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    background:
+      /* paper texture using an SVG data URI (subtle) */
+      repeating-linear-gradient(transparent, transparent 24px, rgba(255,255,255,0.03) 24px, rgba(255,255,255,0.03) 25px),
+      linear-gradient(#fff,#fff);
+  }
+  canvas{width:100%;height:100%;display:block; touch-action:none; background:transparent}
+  .hint {
+    position:absolute; right:10px; bottom:10px; background:rgba(255,255,255,0.8); padding:8px 10px; border-radius:8px;
+    font-size:13px; box-shadow:0 6px 14px rgba(0,0,0,0.08);
+  }
+  footer{font-size:12px;color:#666;padding-left:6px}
+  @media (max-width:640px){
+    .toolbar{gap:6px;padding:6px}
+    .color{width:32px;height:32px}
+    input[type=range]{width:100px}
+  }
+</style>
 </head>
 <body>
-    <h1>🎨 Learn the Alphabet! 🎨</h1>
-    
-    <div class="alphabet-grid" id="alphabetGrid"></div>
-    
-    <div class="recording-controls">
-        <button class="control-btn record-btn" id="recordBtn">🎤 Record</button>
-        <button class="control-btn play-btn" id="playBtn" disabled>▶️ Play</button>
-        <div class="status" id="status">Press Record to start!</div>
-        <div class="progress-container" id="progressContainer">
-            <div class="progress-bar" id="progressBar"></div>
-        </div>
+  <div class="app">
+    <header>
+      <h1>🌈 Kids Watercolor Studio</h1>
+      <div style="flex:1"></div>
+    </header>
+
+    <div class="toolbar" role="toolbar" aria-label="Painting tools">
+      <div class="palette" id="palette" aria-label="colors">
+        <!-- color buttons inserted by JS -->
+      </div>
+
+      <div class="controls" style="margin-left:6px">
+        <label>Brush <input id="size" type="range" min="4" max="80" value="24" /> </label>
+      </div>
+
+      <div class="controls">
+        <label>Wetness <input id="wet" type="range" min="0" max="30" value="8" /></label>
+      </div>
+
+      <div style="display:flex;gap:6px">
+        <button id="undo">Undo</button>
+        <button id="clear">Clear</button>
+        <button id="save">Save PNG</button>
+      </div>
+
     </div>
 
-    <script>
-        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-        const grid = document.getElementById('alphabetGrid');
-        const recordBtn = document.getElementById('recordBtn');
-        const playBtn = document.getElementById('playBtn');
-        const status = document.getElementById('status');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioBlob;
-        let audioUrl;
-        let progressInterval;
-        
-        // Create alphabet buttons
-        alphabet.forEach(letter => {
-            const btn = document.createElement('button');
-            btn.className = 'letter-btn';
-            btn.textContent = letter;
-            btn.addEventListener('click', () => speakLetter(letter));
-            grid.appendChild(btn);
-        });
-        
-        // Speak letter using Web Speech API
-        function speakLetter(letter) {
-            const utterance = new SpeechSynthesisUtterance(letter);
-            utterance.rate = 0.8;
-            utterance.pitch = 1.3;
-            
-            // Try to get a female voice
-            const voices = speechSynthesis.getVoices();
-            const femaleVoice = voices.find(voice => 
-                voice.lang.startsWith('en') && (
-                    voice.name.toLowerCase().includes('female') ||
-                    voice.name.includes('Samantha') ||
-                    voice.name.includes('Victoria') ||
-                    voice.name.includes('Karen') ||
-                    voice.name.includes('Zira') ||
-                    voice.name.includes('Susan') ||
-                    voice.name.includes('Google US English Female')
-                )
-            ) || voices.find(voice => voice.lang.startsWith('en'));
-            
-            if (femaleVoice) {
-                utterance.voice = femaleVoice;
-            }
-            
-            speechSynthesis.speak(utterance);
-        }
-        
-        // Load voices (they load asynchronously)
-        speechSynthesis.addEventListener('voiceschanged', () => {
-            speechSynthesis.getVoices();
-        });
-        
-        // Recording functionality
-        recordBtn.addEventListener('click', async () => {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                // Stop recording
-                mediaRecorder.stop();
-                recordBtn.textContent = '🎤 Record';
-                recordBtn.classList.remove('recording');
-                status.textContent = 'Recording saved!';
-                clearInterval(progressInterval);
-                progressContainer.classList.remove('active');
-                progressBar.style.width = '0%';
-                return;
-            }
-            
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                audioChunks = [];
-                
-                mediaRecorder = new MediaRecorder(stream);
-                
-                mediaRecorder.ondataavailable = (e) => {
-                    audioChunks.push(e.data);
-                };
-                
-                mediaRecorder.onstop = () => {
-                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    audioUrl = URL.createObjectURL(audioBlob);
-                    playBtn.disabled = false;
-                    
-                    // Stop all tracks
-                    stream.getTracks().forEach(track => track.stop());
-                };
-                
-                mediaRecorder.start();
-                recordBtn.textContent = '⏹️ Stop';
-                recordBtn.classList.add('recording');
-                status.textContent = 'Recording...';
-                
-                // Show and animate progress bar
-                progressContainer.classList.add('active');
-                progressBar.classList.add('recording');
-                progressBar.style.width = '0%';
-                
-                let progress = 0;
-                const duration = 4000; // 4 seconds
-                const interval = 50; // Update every 50ms
-                const increment = (interval / duration) * 100;
-                
-                progressInterval = setInterval(() => {
-                    progress += increment;
-                    if (progress >= 100) {
-                        progress = 100;
-                        clearInterval(progressInterval);
-                    }
-                    progressBar.style.width = progress + '%';
-                }, interval);
-                
-                // Auto-stop after 4 seconds
-                setTimeout(() => {
-                    if (mediaRecorder && mediaRecorder.state === 'recording') {
-                        mediaRecorder.stop();
-                        recordBtn.textContent = '🎤 Record';
-                        recordBtn.classList.remove('recording');
-                        status.textContent = 'Recording complete!';
-                        clearInterval(progressInterval);
-                        setTimeout(() => {
-                            progressContainer.classList.remove('active');
-                            progressBar.classList.remove('recording');
-                            progressBar.style.width = '0%';
-                        }, 500);
-                    }
-                }, 4000);
-                
-            } catch (err) {
-                status.textContent = 'Microphone access denied!';
-                console.error('Error accessing microphone:', err);
-            }
-        });
-        
-        // Play recording
-        playBtn.addEventListener('click', () => {
-            if (audioUrl) {
-                const audio = new Audio(audioUrl);
-                status.textContent = 'Playing recording...';
-                
-                // Show and animate progress bar for playback
-                progressContainer.classList.add('active');
-                progressBar.classList.remove('recording');
-                progressBar.style.width = '0%';
-                
-                audio.play();
-                
-                // Update progress bar during playback
-                progressInterval = setInterval(() => {
-                    if (audio.duration) {
-                        const progress = (audio.currentTime / audio.duration) * 100;
-                        progressBar.style.width = progress + '%';
-                    }
-                }, 50);
-                
-                audio.onended = () => {
-                    status.textContent = 'Press Record to start!';
-                    clearInterval(progressInterval);
-                    progressBar.style.width = '100%';
-                    setTimeout(() => {
-                        progressContainer.classList.remove('active');
-                        progressBar.style.width = '0%';
-                    }, 500);
-                };
-            }
-        });
-    </script>
+    <div class="canvas-wrap" id="wrap">
+      <canvas id="paint"></canvas>
+      <div class="hint">Tip: press and drag to paint. Use Wetness to make colors spread.</div>
+    </div>
+
+    <footer>Made with ♥ — encourage creative messes!</footer>
+  </div>
+
+<script>
+/*
+  Kids Watercolor Studio
+  - Uses a main canvas and an offscreen canvas to draw smooth watercolor-like strokes.
+  - Controls: color palette, brush size, wetness (blur), undo, clear, save.
+  - Pointer events supported (mouse, touch, stylus).
+*/
+
+/* ---- Setup ---- */
+const canvas = document.getElementById('paint');
+const wrap = document.getElementById('wrap');
+const ctx = canvas.getContext('2d', { willReadFrequently: false });
+
+let width, height;
+function resize() {
+  // size canvas to container's pixel size for crisp drawing
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  width = wrap.clientWidth;
+  height = wrap.clientHeight;
+  canvas.width = Math.floor(width * dpr);
+  canvas.height = Math.floor(height * dpr);
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // redraw background or maintain existing; we'll keep current bitmap when resizing.
+  // (If window resizes smaller, image will be scaled by browser)
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* Offscreen canvas for smoothing/wet blending */
+const off = document.createElement('canvas');
+const offCtx = off.getContext('2d');
+function resizeOff() {
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  off.width = Math.floor(width * dpr);
+  off.height = Math.floor(height * dpr);
+  offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeOff();
+window.addEventListener('resize', resizeOff);
+
+/* ---- Controls ---- */
+const paletteEl = document.getElementById('palette');
+const colors = [
+  '#ff6b6b','#ffb86b','#ffd86b','#fff86b','#8aff8a',
+  '#7bdff6','#7aa2ff','#b58bff','#ff9bde','#c49a84',
+  '#6b6b6b'
+];
+
+// create palette buttons
+let currentColor = colors[6];
+colors.forEach((c, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'color';
+  btn.style.background = c;
+  btn.title = c;
+  if (c === currentColor) btn.classList.add('selected');
+  btn.addEventListener('click', ()=> {
+    document.querySelectorAll('.color').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    currentColor = c;
+  });
+  paletteEl.appendChild(btn);
+});
+
+// sliders and buttons
+const sizeEl = document.getElementById('size');
+const wetEl = document.getElementById('wet');
+const undoBtn = document.getElementById('undo');
+const clearBtn = document.getElementById('clear');
+const saveBtn = document.getElementById('save');
+
+/* ---- Painting state ---- */
+let painting = false;
+let last = null;
+let brushSize = parseInt(sizeEl.value,10);
+let wetness = parseInt(wetEl.value,10);
+
+/* Undo stack (stores data URLs). limit 12 */
+const undoStack = [];
+function pushUndo(){
+  try {
+    if (undoStack.length > 12) undoStack.shift();
+    undoStack.push(canvas.toDataURL('image/png'));
+    undoBtn.disabled = false;
+  } catch(e){ console.warn('undo push failed',e); }
+}
+function doUndo(){
+  if (!undoStack.length) return;
+  const data = undoStack.pop();
+  const img = new Image();
+  img.onload = () => {
+    // clear then draw
+    ctx.clearRect(0,0,width,height);
+    ctx.drawImage(img,0,0,width,height);
+  };
+  img.src = data;
+  if (!undoStack.length) undoBtn.disabled = true;
+}
+undoBtn.addEventListener('click', doUndo);
+
+/* Clear */
+clearBtn.addEventListener('click', ()=>{
+  pushUndo();
+  ctx.clearRect(0,0,width,height);
+});
+
+/* Save */
+saveBtn.addEventListener('click', ()=>{
+  // create a tidy download
+  const link = document.createElement('a');
+  link.download = 'my_watercolor.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+
+/* Update settings */
+sizeEl.addEventListener('input', ()=> brushSize = parseInt(sizeEl.value,10));
+wetEl.addEventListener('input', ()=> wetness = parseInt(wetEl.value,10));
+
+/* Utility: get local pointer point relative to canvas */
+function eventPoint(e){
+  const rect = canvas.getBoundingClientRect();
+  let x, y;
+  if (e.touches && e.touches.length) {
+    x = e.touches[0].clientX; y = e.touches[0].clientY;
+  } else {
+    x = e.clientX; y = e.clientY;
+  }
+  return { x: x - rect.left, y: y - rect.top };
+}
+
+/* Draw a single watercolor dab at a point */
+function drawDab(x, y, size, color, alpha=0.35) {
+  // We'll draw into the offscreen canvas, apply blur, then composite onto main canvas.
+  // Draw radial gradient dab on offCtx
+  offCtx.save();
+  offCtx.globalCompositeOperation = 'source-over';
+  const g = offCtx.createRadialGradient(x, y, 0, x, y, size);
+  // softer watercolor: center strong color -> edges transparent
+  g.addColorStop(0, hexToRgba(color, alpha));
+  g.addColorStop(0.6, hexToRgba(color, Math.max(0.05, alpha*0.6)));
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  offCtx.fillStyle = g;
+  offCtx.beginPath();
+  offCtx.arc(x, y, size, 0, Math.PI*2);
+  offCtx.fill();
+  offCtx.restore();
+
+  // Apply blur by copying off canvas to temp and using ctx.filter when drawing onto main canvas
+  // We'll draw the off canvas onto a temporary canvas region (using main ctx filter)
+  // Save and set filter on main ctx
+  ctx.save();
+  ctx.filter = `blur(${wetness}px)`;
+  // Slightly lower alpha for watercolor layering
+  ctx.globalAlpha = 0.9;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(off, 0, 0, width, height);
+  ctx.restore();
+}
+
+/* Blend color by drawing multiple semi-transparent dabs along a stroke */
+function drawStrokeSegment(x1,y1,x2,y2, size, color) {
+  // draw several dabs interpolated
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.hypot(dx, dy);
+  const step = Math.max(1, size * 0.25);
+  const count = Math.ceil(dist / step);
+  for(let i=0;i<=count;i++){
+    const t = i / (count || 1);
+    const x = x1 + dx * t;
+    const y = y1 + dy * t;
+    // random jitter to look playful
+    const jitter = (Math.random() - 0.5) * size * 0.15;
+    drawDab(x + jitter, y + jitter, size * (0.85 + Math.random()*0.4), color, 0.38);
+  }
+  // After drawing stroke segment, clear offCtx to prepare for next draw (we only want recent marks to be blurred)
+  offCtx.clearRect(0,0,width,height);
+}
+
+/* Pointer event handlers */
+canvas.addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  painting = true;
+  last = eventPoint(e);
+  pushUndo(); // allow undo for this new stroke
+});
+
+canvas.addEventListener('pointermove', (e)=>{
+  if (!painting) return;
+  const p = eventPoint(e);
+  // Smooth stroke by drawing segment between last and current
+  drawStrokeSegment(last.x, last.y, p.x, p.y, brushSize, currentColor);
+  last = p;
+});
+
+canvas.addEventListener('pointerup', (e)=>{
+  if (!painting) return;
+  painting = false;
+  last = null;
+  // small extra spread: draw a final dab to make stroke tail soft
+  // No additional code required — state is fine.
+});
+
+/* Touch fallback for older browsers (optional): touches -> pointer events usually available */
+
+/* Helpful function: hex to rgba */
+function hexToRgba(hex, a=1){
+  // supports #rrggbb or #rgb
+  const h = hex.replace('#','');
+  let r,g,b;
+  if (h.length === 3) {
+    r = parseInt(h[0]+h[0],16);
+    g = parseInt(h[1]+h[1],16);
+    b = parseInt(h[2]+h[2],16);
+  } else {
+    r = parseInt(h.substring(0,2),16);
+    g = parseInt(h.substring(2,4),16);
+    b = parseInt(h.substring(4,6),16);
+  }
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* Initialize with a soft paper tint so kids' painting looks pretty */
+function initPaper() {
+  // faint watercolor wash background (non-destructive)
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-over';
+  const wash = ctx.createLinearGradient(0,0,width, height);
+  wash.addColorStop(0, 'rgba(255,250,240,0.45)');
+  wash.addColorStop(1, 'rgba(245,255,255,0.45)');
+  ctx.fillStyle = wash;
+  ctx.fillRect(0,0,width,height);
+  ctx.restore();
+}
+initPaper();
+
+/* small UX: disable undo if none */
+undoBtn.disabled = true;
+
+/* Accessibility: keyboard shortcuts */
+window.addEventListener('keydown', (e)=>{
+  if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { doUndo(); e.preventDefault(); }
+  if (e.key === 'c') { pushUndo(); ctx.clearRect(0,0,width,height); e.preventDefault(); }
+});
+
+/* Make sure offscreen canvas matches size */
+function syncOff(){
+  off.width = canvas.width;
+  off.height = canvas.height;
+  // keep same transform
+  offCtx.setTransform(ctx.getTransform());
+}
+syncOff();
+window.addEventListener('resize', syncOff);
+
+/* Extra: let kids change background color by double click */
+canvas.addEventListener('dblclick', (e)=>{
+  // give simple fun effect: add a light halo behind the pointer
+  const p = eventPoint(e);
+  const halo = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,80);
+  halo.addColorStop(0, 'rgba(255,255,200,0.45)');
+  halo.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-over';
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(p.x,p.y,80,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+});
+
+/* Initial nice-wide stroke to demonstrate */
+(function demoSplash(){
+  // small playful demo: paint a couple of dabs automatically
+  const demoColors = ['#7aa2ff','#ffb86b','#ff6b6b'];
+  const cx = width * 0.25, cy = height * 0.3;
+  for (let i=0;i<demoColors.length;i++){
+    drawDab(cx + i*40, cy + i*30, 36 + i*8, demoColors[i], 0.28);
+  }
+  offCtx.clearRect(0,0,width,height);
+})();
+
+</script>
 </body>
 </html>
