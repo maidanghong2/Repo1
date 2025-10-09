@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alphabet Learning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: white;
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .alphabet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        
+        .letter-btn {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: none;
+            border-radius: 20px;
+            padding: 25px;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .letter-btn:hover {
+            transform: scale(1.1);
+            background: linear-gradient(145deg, #ffd700, #ffed4e);
+            box-shadow: 5px 5px 25px rgba(255,215,0,0.5);
+        }
+        
+        .letter-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .recording-controls {
+            background: white;
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 5px 5px 20px rgba(0,0,0,0.3);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            padding: 20px 40px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .record-btn {
+            background: linear-gradient(145deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+        
+        .record-btn:hover {
+            background: linear-gradient(145deg, #ff5252, #e63946);
+            transform: scale(1.05);
+        }
+        
+        .record-btn.recording {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .play-btn {
+            background: linear-gradient(145deg, #51cf66, #37b24d);
+            color: white;
+        }
+        
+        .play-btn:hover:not(:disabled) {
+            background: linear-gradient(145deg, #37b24d, #2b8a3e);
+            transform: scale(1.05);
+        }
+        
+        .play-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            font-size: 1.1em;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            display: none;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #51cf66, #37b24d);
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 15px;
+        }
+        
+        .progress-bar.recording {
+            background: linear-gradient(90deg, #ff6b6b, #ee5a52);
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Learn the Alphabet! 🎨</h1>
+    
+    <div class="alphabet-grid" id="alphabetGrid"></div>
+    
+    <div class="recording-controls">
+        <button class="control-btn record-btn" id="recordBtn">🎤 Record</button>
+        <button class="control-btn play-btn" id="playBtn" disabled>▶️ Play</button>
+        <div class="status" id="status">Press Record to start!</div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+    <script>
+        const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+        const grid = document.getElementById('alphabetGrid');
+        const recordBtn = document.getElementById('recordBtn');
+        const playBtn = document.getElementById('playBtn');
+        const status = document.getElementById('status');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob;
+        let audioUrl;
+        let progressInterval;
+        
+        // Create alphabet buttons
+        alphabet.forEach(letter => {
+            const btn = document.createElement('button');
+            btn.className = 'letter-btn';
+            btn.textContent = letter;
+            btn.addEventListener('click', () => speakLetter(letter));
+            grid.appendChild(btn);
+        });
+        
+        // Speak letter using Web Speech API
+        function speakLetter(letter) {
+            const utterance = new SpeechSynthesisUtterance(letter);
+            utterance.rate = 0.8;
+            utterance.pitch = 1.3;
+            
+            // Try to get a female voice
+            const voices = speechSynthesis.getVoices();
+            const femaleVoice = voices.find(voice => 
+                voice.lang.startsWith('en') && (
+                    voice.name.toLowerCase().includes('female') ||
+                    voice.name.includes('Samantha') ||
+                    voice.name.includes('Victoria') ||
+                    voice.name.includes('Karen') ||
+                    voice.name.includes('Zira') ||
+                    voice.name.includes('Susan') ||
+                    voice.name.includes('Google US English Female')
+                )
+            ) || voices.find(voice => voice.lang.startsWith('en'));
+            
+            if (femaleVoice) {
+                utterance.voice = femaleVoice;
+            }
+            
+            speechSynthesis.speak(utterance);
+        }
+        
+        // Load voices (they load asynchronously)
+        speechSynthesis.addEventListener('voiceschanged', () => {
+            speechSynthesis.getVoices();
+        });
+        
+        // Recording functionality
+        recordBtn.addEventListener('click', async () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                // Stop recording
+                mediaRecorder.stop();
+                recordBtn.textContent = '🎤 Record';
+                recordBtn.classList.remove('recording');
+                status.textContent = 'Recording saved!';
+                clearInterval(progressInterval);
+                progressContainer.classList.remove('active');
+                progressBar.style.width = '0%';
+                return;
+            }
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioChunks = [];
+                
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    audioChunks.push(e.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    audioUrl = URL.createObjectURL(audioBlob);
+                    playBtn.disabled = false;
+                    
+                    // Stop all tracks
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                recordBtn.textContent = '⏹️ Stop';
+                recordBtn.classList.add('recording');
+                status.textContent = 'Recording...';
+                
+                // Show and animate progress bar
+                progressContainer.classList.add('active');
+                progressBar.classList.add('recording');
+                progressBar.style.width = '0%';
+                
+                let progress = 0;
+                const duration = 4000; // 4 seconds
+                const interval = 50; // Update every 50ms
+                const increment = (interval / duration) * 100;
+                
+                progressInterval = setInterval(() => {
+                    progress += increment;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(progressInterval);
+                    }
+                    progressBar.style.width = progress + '%';
+                }, interval);
+                
+                // Auto-stop after 4 seconds
+                setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                        recordBtn.textContent = '🎤 Record';
+                        recordBtn.classList.remove('recording');
+                        status.textContent = 'Recording complete!';
+                        clearInterval(progressInterval);
+                        setTimeout(() => {
+                            progressContainer.classList.remove('active');
+                            progressBar.classList.remove('recording');
+                            progressBar.style.width = '0%';
+                        }, 500);
+                    }
+                }, 4000);
+                
+            } catch (err) {
+                status.textContent = 'Microphone access denied!';
+                console.error('Error accessing microphone:', err);
+            }
+        });
+        
+        // Play recording
+        playBtn.addEventListener('click', () => {
+            if (audioUrl) {
+                const audio = new Audio(audioUrl);
+                status.textContent = 'Playing recording...';
+                
+                // Show and animate progress bar for playback
+                progressContainer.classList.add('active');
+                progressBar.classList.remove('recording');
+                progressBar.style.width = '0%';
+                
+                audio.play();
+                
+                // Update progress bar during playback
+                progressInterval = setInterval(() => {
+                    if (audio.duration) {
+                        const progress = (audio.currentTime / audio.duration) * 100;
+                        progressBar.style.width = progress + '%';
+                    }
+                }, 50);
+                
+                audio.onended = () => {
+                    status.textContent = 'Press Record to start!';
+                    clearInterval(progressInterval);
+                    progressBar.style.width = '100%';
+                    setTimeout(() => {
+                        progressContainer.classList.remove('active');
+                        progressBar.style.width = '0%';
+                    }, 500);
+                };
+            }
+        });
+    </script>
+</body>
+</html>
