@@ -1,231 +1,404 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎨 Mobile Watercolor Fun</title>
-    <style>
-        /* Basic styling for the page elements */
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 10px; /* Reduced padding for mobile screen space */
-            user-select: none; /* Prevent text selection while drawing */
-            -webkit-user-select: none; /* Safari/iOS */
-            -ms-user-select: none; /* IE/Edge */
-            touch-action: none; /* Important: Prevents browser default touch behavior (like scrolling) */
-        }
-
-        /* Container for the canvas and controls */
-        #painting-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Styling for the drawing canvas */
-        #watercolorCanvas {
-            width: 95%; /* Make canvas width responsive */
-            max-width: 600px; /* Keep a maximum size for desktop */
-            height: auto; /* Height will be set in JS for 4:3 aspect ratio */
-            border: 5px solid #fff; 
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            cursor: pointer; /* Use pointer cursor for all devices */
-            background-color: #ffffff;
-        }
-
-        /* Controls layout */
-        #controls {
-            display: flex;
-            gap: 8px; /* Slightly smaller gap for mobile */
-            flex-wrap: wrap; 
-            justify-content: center;
-        }
-
-        /* Styling for the color selection buttons */
-        .color-button {
-            width: 35px; /* Slightly smaller buttons for mobile */
-            height: 35px;
-            border-radius: 50%;
-            border: 2px solid #333;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .selected-color {
-            border: 4px solid gold; 
-            transform: scale(1.1);
-        }
-
-        /* Styling for the 'Clear' button */
-        #clearButton {
-            padding: 8px 15px;
-            background-color: #ff6347; 
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            flex-grow: 1; /* Allows button to expand nicely */
-            min-width: 100px;
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kids Watercolor Paint</title>
+<style>
+  :root{
+    --panel-bg: #fffef6;
+    --accent: #7aa2ff;
+    --shadow: rgba(20,20,20,0.12);
+    font-family: "Comic Sans MS", "Marker Felt", "Trebuchet MS", Arial, sans-serif;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(#f3efe9,#f8f6f2);}
+  .app {
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    gap:8px;
+    padding:10px;
+    box-sizing:border-box;
+  }
+  header {
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  h1 {
+    margin:0;font-size:20px;
+  }
+  .toolbar {
+    display:flex;
+    gap:10px;
+    align-items:center;
+    background:var(--panel-bg);
+    padding:8px;
+    border-radius:10px;
+    box-shadow:0 6px 18px var(--shadow);
+    flex-wrap:wrap;
+  }
+  .palette { display:flex; gap:6px; align-items:center; }
+  .color {
+    width:36px;height:36px;border-radius:8px;border:2px solid rgba(255,255,255,0.7);
+    box-shadow:0 3px 6px rgba(0,0,0,0.12);
+    cursor:pointer; outline:0;
+  }
+  .color.selected { transform:scale(1.08); box-shadow:0 6px 12px rgba(0,0,0,0.18); }
+  label{font-size:13px;color:#333}
+  .controls{display:flex;gap:10px;align-items:center}
+  input[type=range]{width:120px}
+  button {
+    background:linear-gradient(#fff,#f2f2f2);
+    border:1px solid #e2e2e2;
+    padding:8px 10px;border-radius:8px;cursor:pointer;
+    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+    font-weight:700;
+  }
+  button:active{transform:translateY(1px)}
+  .canvas-wrap{
+    position:relative; flex:1; display:flex; border-radius:12px; overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,0.12);
+    background:
+      /* paper texture using an SVG data URI (subtle) */
+      repeating-linear-gradient(transparent, transparent 24px, rgba(255,255,255,0.03) 24px, rgba(255,255,255,0.03) 25px),
+      linear-gradient(#fff,#fff);
+  }
+  canvas{width:100%;height:100%;display:block; touch-action:none; background:transparent}
+  .hint {
+    position:absolute; right:10px; bottom:10px; background:rgba(255,255,255,0.8); padding:8px 10px; border-radius:8px;
+    font-size:13px; box-shadow:0 6px 14px rgba(0,0,0,0.08);
+  }
+  footer{font-size:12px;color:#666;padding-left:6px}
+  @media (max-width:640px){
+    .toolbar{gap:6px;padding:6px}
+    .color{width:32px;height:32px}
+    input[type=range]{width:100px}
+  }
+</style>
 </head>
 <body>
+  <div class="app">
+    <header>
+      <h1>🌈 Kids Watercolor Studio</h1>
+      <div style="flex:1"></div>
+    </header>
 
-    <h1>Water Fun! 💦 Use Your Finger!</h1>
-    
-    <div id="painting-area">
-        <div id="controls">
-            <div class="color-button" style="background-color: red;" onclick="changeColor('rgba(255, 0, 0, 0.1)')" data-color="rgba(255, 0, 0, 0.1)"></div>
-            <div class="color-button" style="background-color: orange;" onclick="changeColor('rgba(255, 165, 0, 0.1)')" data-color="rgba(255, 165, 0, 0.1)"></div>
-            <div class="color-button" style="background-color: yellow;" onclick="changeColor('rgba(255, 255, 0, 0.1)')" data-color="rgba(255, 255, 0, 0.1)"></div>
-            <div class="color-button" style="background-color: green;" onclick="changeColor('rgba(0, 128, 0, 0.1)')" data-color="rgba(0, 128, 0, 0.1)"></div>
-            <div class="color-button" style="background-color: blue;" onclick="changeColor('rgba(0, 0, 255, 0.1)')" data-color="rgba(0, 0, 255, 0.1)"></div>
-            <div class="color-button" style="background-color: purple;" onclick="changeColor('rgba(128, 0, 128, 0.1)')" data-color="rgba(128, 0, 128, 0.1)"></div>
-            <div class="color-button" style="background-color: brown;" onclick="changeColor('rgba(139, 69, 19, 0.1)')" data-color="rgba(139, 69, 19, 0.1)"></div>
+    <div class="toolbar" role="toolbar" aria-label="Painting tools">
+      <div class="palette" id="palette" aria-label="colors">
+        <!-- color buttons inserted by JS -->
+      </div>
 
-            <button id="clearButton" onclick="clearCanvas()">Clear Paper</button>
-        </div>
+      <div class="controls" style="margin-left:6px">
+        <label>Brush <input id="size" type="range" min="4" max="80" value="24" /> </label>
+      </div>
 
-        <canvas id="watercolorCanvas" width="600" height="400"></canvas>
+      <div class="controls">
+        <label>Wetness <input id="wet" type="range" min="0" max="30" value="8" /></label>
+      </div>
+
+      <div style="display:flex;gap:6px">
+        <button id="undo">Undo</button>
+        <button id="clear">Clear</button>
+        <button id="save">Save PNG</button>
+      </div>
+
     </div>
 
-    <script>
-        const canvas = document.getElementById('watercolorCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-        let currentColor = 'rgba(255, 0, 0, 0.1)'; 
-        let brushSize = 25; 
+    <div class="canvas-wrap" id="wrap">
+      <canvas id="paint"></canvas>
+      <div class="hint">Tip: press and drag to paint. Use Wetness to make colors spread.</div>
+    </div>
 
-        // --- Core Drawing Logic ---
-        function draw(x, y) {
-            if (!isDrawing) return; 
+    <footer>Made with ♥ — encourage creative messes!</footer>
+  </div>
 
-            ctx.beginPath();
-            ctx.strokeStyle = currentColor;
-            ctx.lineWidth = brushSize;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+<script>
+/*
+  Kids Watercolor Studio
+  - Uses a main canvas and an offscreen canvas to draw smooth watercolor-like strokes.
+  - Controls: color palette, brush size, wetness (blur), undo, clear, save.
+  - Pointer events supported (mouse, touch, stylus).
+*/
 
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(x, y);
-            ctx.stroke();
+/* ---- Setup ---- */
+const canvas = document.getElementById('paint');
+const wrap = document.getElementById('wrap');
+const ctx = canvas.getContext('2d', { willReadFrequently: false });
 
-            // Update the last position for the next line segment
-            [lastX, lastY] = [x, y];
-        }
+let width, height;
+function resize() {
+  // size canvas to container's pixel size for crisp drawing
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  width = wrap.clientWidth;
+  height = wrap.clientHeight;
+  canvas.width = Math.floor(width * dpr);
+  canvas.height = Math.floor(height * dpr);
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // redraw background or maintain existing; we'll keep current bitmap when resizing.
+  // (If window resizes smaller, image will be scaled by browser)
+}
+window.addEventListener('resize', resize);
+resize();
 
-        // --- Helper Function to Get Coords ---
-        function getCoords(e) {
-            // Check if it's a touch event
-            if (e.touches && e.touches.length > 0) {
-                // Use the first touch point
-                const touch = e.touches[0];
-                const rect = canvas.getBoundingClientRect();
-                
-                // Scale coordinates from screen pixels to canvas pixels
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
+/* Offscreen canvas for smoothing/wet blending */
+const off = document.createElement('canvas');
+const offCtx = off.getContext('2d');
+function resizeOff() {
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  off.width = Math.floor(width * dpr);
+  off.height = Math.floor(height * dpr);
+  offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeOff();
+window.addEventListener('resize', resizeOff);
 
-                const x = (touch.clientX - rect.left) * scaleX;
-                const y = (touch.clientY - rect.top) * scaleY;
-                return { x: x, y: y };
-            } 
-            // Otherwise, it's a mouse event
-            else {
-                return { x: e.offsetX, y: e.offsetY };
-            }
-        }
+/* ---- Controls ---- */
+const paletteEl = document.getElementById('palette');
+const colors = [
+  '#ff6b6b','#ffb86b','#ffd86b','#fff86b','#8aff8a',
+  '#7bdff6','#7aa2ff','#b58bff','#ff9bde','#c49a84',
+  '#6b6b6b'
+];
 
-        // --- Universal Event Handlers (Mouse & Touch) ---
+// create palette buttons
+let currentColor = colors[6];
+colors.forEach((c, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'color';
+  btn.style.background = c;
+  btn.title = c;
+  if (c === currentColor) btn.classList.add('selected');
+  btn.addEventListener('click', ()=> {
+    document.querySelectorAll('.color').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    currentColor = c;
+  });
+  paletteEl.appendChild(btn);
+});
 
-        function startDrawing(e) {
-            e.preventDefault(); // Crucial: Stop default mobile actions (like scrolling/pinch-to-zoom)
-            isDrawing = true;
-            const { x, y } = getCoords(e);
-            [lastX, lastY] = [x, y]; 
-        }
+// sliders and buttons
+const sizeEl = document.getElementById('size');
+const wetEl = document.getElementById('wet');
+const undoBtn = document.getElementById('undo');
+const clearBtn = document.getElementById('clear');
+const saveBtn = document.getElementById('save');
 
-        function continueDrawing(e) {
-            e.preventDefault(); // Crucial for smooth drawing
-            if (!isDrawing) return;
-            const { x, y } = getCoords(e);
-            draw(x, y);
-        }
+/* ---- Painting state ---- */
+let painting = false;
+let last = null;
+let brushSize = parseInt(sizeEl.value,10);
+let wetness = parseInt(wetEl.value,10);
 
-        function stopDrawing(e) {
-            isDrawing = false;
-        }
+/* Undo stack (stores data URLs). limit 12 */
+const undoStack = [];
+function pushUndo(){
+  try {
+    if (undoStack.length > 12) undoStack.shift();
+    undoStack.push(canvas.toDataURL('image/png'));
+    undoBtn.disabled = false;
+  } catch(e){ console.warn('undo push failed',e); }
+}
+function doUndo(){
+  if (!undoStack.length) return;
+  const data = undoStack.pop();
+  const img = new Image();
+  img.onload = () => {
+    // clear then draw
+    ctx.clearRect(0,0,width,height);
+    ctx.drawImage(img,0,0,width,height);
+  };
+  img.src = data;
+  if (!undoStack.length) undoBtn.disabled = true;
+}
+undoBtn.addEventListener('click', doUndo);
 
-        // --- Attach Event Listeners ---
-        
-        // Mouse Events (for desktop/mouse input)
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', continueDrawing);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
+/* Clear */
+clearBtn.addEventListener('click', ()=>{
+  pushUndo();
+  ctx.clearRect(0,0,width,height);
+});
 
-        // Touch Events (for Android/iOS)
-        canvas.addEventListener('touchstart', startDrawing);
-        canvas.addEventListener('touchmove', continueDrawing);
-        canvas.addEventListener('touchend', stopDrawing);
-        canvas.addEventListener('touchcancel', stopDrawing); // Handles interruption
+/* Save */
+saveBtn.addEventListener('click', ()=>{
+  // create a tidy download
+  const link = document.createElement('a');
+  link.download = 'my_watercolor.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
 
-        // --- Responsive Canvas Sizing ---
-        function resizeCanvas() {
-            // Get the current CSS width
-            const styleWidth = canvas.clientWidth;
-            // Maintain a 4:3 aspect ratio (typical for drawing apps)
-            const styleHeight = (styleWidth / 4) * 3;
+/* Update settings */
+sizeEl.addEventListener('input', ()=> brushSize = parseInt(sizeEl.value,10));
+wetEl.addEventListener('input', ()=> wetness = parseInt(wetEl.value,10));
 
-            // Set the *actual* drawing resolution to a fixed size (e.g., 600x450)
-            // This prevents the brush from looking tiny on high-density screens
-            canvas.height = 450; 
-            canvas.width = 600;
-            
-            // Apply the calculated height to the CSS for display
-            canvas.style.height = `${styleHeight}px`;
-        }
+/* Utility: get local pointer point relative to canvas */
+function eventPoint(e){
+  const rect = canvas.getBoundingClientRect();
+  let x, y;
+  if (e.touches && e.touches.length) {
+    x = e.touches[0].clientX; y = e.touches[0].clientY;
+  } else {
+    x = e.clientX; y = e.clientY;
+  }
+  return { x: x - rect.left, y: y - rect.top };
+}
 
-        // --- Control Functions ---
-        function clearCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); 
-        }
+/* Draw a single watercolor dab at a point */
+function drawDab(x, y, size, color, alpha=0.35) {
+  // We'll draw into the offscreen canvas, apply blur, then composite onto main canvas.
+  // Draw radial gradient dab on offCtx
+  offCtx.save();
+  offCtx.globalCompositeOperation = 'source-over';
+  const g = offCtx.createRadialGradient(x, y, 0, x, y, size);
+  // softer watercolor: center strong color -> edges transparent
+  g.addColorStop(0, hexToRgba(color, alpha));
+  g.addColorStop(0.6, hexToRgba(color, Math.max(0.05, alpha*0.6)));
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  offCtx.fillStyle = g;
+  offCtx.beginPath();
+  offCtx.arc(x, y, size, 0, Math.PI*2);
+  offCtx.fill();
+  offCtx.restore();
 
-        function changeColor(newColor) {
-            currentColor = newColor;
+  // Apply blur by copying off canvas to temp and using ctx.filter when drawing onto main canvas
+  // We'll draw the off canvas onto a temporary canvas region (using main ctx filter)
+  // Save and set filter on main ctx
+  ctx.save();
+  ctx.filter = `blur(${wetness}px)`;
+  // Slightly lower alpha for watercolor layering
+  ctx.globalAlpha = 0.9;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(off, 0, 0, width, height);
+  ctx.restore();
+}
 
-            // Update visual selection
-            document.querySelectorAll('.color-button').forEach(button => {
-                button.classList.remove('selected-color');
-            });
-            const clickedButton = document.querySelector(`[data-color="${newColor}"]`);
-            if (clickedButton) {
-                clickedButton.classList.add('selected-color');
-            }
-        }
+/* Blend color by drawing multiple semi-transparent dabs along a stroke */
+function drawStrokeSegment(x1,y1,x2,y2, size, color) {
+  // draw several dabs interpolated
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.hypot(dx, dy);
+  const step = Math.max(1, size * 0.25);
+  const count = Math.ceil(dist / step);
+  for(let i=0;i<=count;i++){
+    const t = i / (count || 1);
+    const x = x1 + dx * t;
+    const y = y1 + dy * t;
+    // random jitter to look playful
+    const jitter = (Math.random() - 0.5) * size * 0.15;
+    drawDab(x + jitter, y + jitter, size * (0.85 + Math.random()*0.4), color, 0.38);
+  }
+  // After drawing stroke segment, clear offCtx to prepare for next draw (we only want recent marks to be blurred)
+  offCtx.clearRect(0,0,width,height);
+}
 
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set up the initial canvas size
-            resizeCanvas();
-            // Select the first color by default
-            const initialColorButton = document.querySelector('.color-button');
-            if (initialColorButton) {
-                initialColorButton.classList.add('selected-color');
-            }
-        });
-        
-        // Re-size canvas whenever the window changes (e.g., rotating the phone)
-        window.addEventListener('resize', resizeCanvas);
+/* Pointer event handlers */
+canvas.addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  painting = true;
+  last = eventPoint(e);
+  pushUndo(); // allow undo for this new stroke
+});
 
-    </script>
+canvas.addEventListener('pointermove', (e)=>{
+  if (!painting) return;
+  const p = eventPoint(e);
+  // Smooth stroke by drawing segment between last and current
+  drawStrokeSegment(last.x, last.y, p.x, p.y, brushSize, currentColor);
+  last = p;
+});
+
+canvas.addEventListener('pointerup', (e)=>{
+  if (!painting) return;
+  painting = false;
+  last = null;
+  // small extra spread: draw a final dab to make stroke tail soft
+  // No additional code required — state is fine.
+});
+
+/* Touch fallback for older browsers (optional): touches -> pointer events usually available */
+
+/* Helpful function: hex to rgba */
+function hexToRgba(hex, a=1){
+  // supports #rrggbb or #rgb
+  const h = hex.replace('#','');
+  let r,g,b;
+  if (h.length === 3) {
+    r = parseInt(h[0]+h[0],16);
+    g = parseInt(h[1]+h[1],16);
+    b = parseInt(h[2]+h[2],16);
+  } else {
+    r = parseInt(h.substring(0,2),16);
+    g = parseInt(h.substring(2,4),16);
+    b = parseInt(h.substring(4,6),16);
+  }
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* Initialize with a soft paper tint so kids' painting looks pretty */
+function initPaper() {
+  // faint watercolor wash background (non-destructive)
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-over';
+  const wash = ctx.createLinearGradient(0,0,width, height);
+  wash.addColorStop(0, 'rgba(255,250,240,0.45)');
+  wash.addColorStop(1, 'rgba(245,255,255,0.45)');
+  ctx.fillStyle = wash;
+  ctx.fillRect(0,0,width,height);
+  ctx.restore();
+}
+initPaper();
+
+/* small UX: disable undo if none */
+undoBtn.disabled = true;
+
+/* Accessibility: keyboard shortcuts */
+window.addEventListener('keydown', (e)=>{
+  if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { doUndo(); e.preventDefault(); }
+  if (e.key === 'c') { pushUndo(); ctx.clearRect(0,0,width,height); e.preventDefault(); }
+});
+
+/* Make sure offscreen canvas matches size */
+function syncOff(){
+  off.width = canvas.width;
+  off.height = canvas.height;
+  // keep same transform
+  offCtx.setTransform(ctx.getTransform());
+}
+syncOff();
+window.addEventListener('resize', syncOff);
+
+/* Extra: let kids change background color by double click */
+canvas.addEventListener('dblclick', (e)=>{
+  // give simple fun effect: add a light halo behind the pointer
+  const p = eventPoint(e);
+  const halo = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,80);
+  halo.addColorStop(0, 'rgba(255,255,200,0.45)');
+  halo.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-over';
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(p.x,p.y,80,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+});
+
+/* Initial nice-wide stroke to demonstrate */
+(function demoSplash(){
+  // small playful demo: paint a couple of dabs automatically
+  const demoColors = ['#7aa2ff','#ffb86b','#ff6b6b'];
+  const cx = width * 0.25, cy = height * 0.3;
+  for (let i=0;i<demoColors.length;i++){
+    drawDab(cx + i*40, cy + i*30, 36 + i*8, demoColors[i], 0.28);
+  }
+  offCtx.clearRect(0,0,width,height);
+})();
+
+</script>
 </body>
 </html>
