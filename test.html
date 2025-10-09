@@ -2,179 +2,230 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Kids Watercolor Painting</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 Mobile Watercolor Fun</title>
     <style>
+        /* Basic styling for the page elements */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #f0f8ff;
+            background-color: #f0f0f0;
             margin: 0;
-            padding: 10px;
-            overscroll-behavior: none; /* Prevent pull-to-refresh */
-            touch-action: manipulation; /* Improve touch responsiveness */
+            padding: 10px; /* Reduced padding for mobile screen space */
+            user-select: none; /* Prevent text selection while drawing */
+            -webkit-user-select: none; /* Safari/iOS */
+            -ms-user-select: none; /* IE/Edge */
+            touch-action: none; /* Important: Prevents browser default touch behavior (like scrolling) */
         }
-        h1 {
-            color: #ff69b4;
-            font-size: 2em;
-            margin: 10px 0;
-        }
-        canvas {
-            border: 2px solid #333;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-            cursor: crosshair;
-            width: 100%;
-            max-width: 800px;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
-        .controls {
-            margin: 10px;
+
+        /* Container for the canvas and controls */
+        #painting-area {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
             gap: 10px;
         }
-        button, select, input {
-            padding: 8px;
-            margin: 5px;
-            font-size: 1.1em;
-            border-radius: 5px;
-            cursor: pointer;
-            touch-action: manipulation; /* Prevent double-tap zoom */
+
+        /* Styling for the drawing canvas */
+        #watercolorCanvas {
+            width: 95%; /* Make canvas width responsive */
+            max-width: 600px; /* Keep a maximum size for desktop */
+            height: auto; /* Height will be set in JS for 4:3 aspect ratio */
+            border: 5px solid #fff; 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer; /* Use pointer cursor for all devices */
+            background-color: #ffffff;
         }
-        button {
-            background-color: #ff4500;
+
+        /* Controls layout */
+        #controls {
+            display: flex;
+            gap: 8px; /* Slightly smaller gap for mobile */
+            flex-wrap: wrap; 
+            justify-content: center;
+        }
+
+        /* Styling for the color selection buttons */
+        .color-button {
+            width: 35px; /* Slightly smaller buttons for mobile */
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .selected-color {
+            border: 4px solid gold; 
+            transform: scale(1.1);
+        }
+
+        /* Styling for the 'Clear' button */
+        #clearButton {
+            padding: 8px 15px;
+            background-color: #ff6347; 
             color: white;
             border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            flex-grow: 1; /* Allows button to expand nicely */
             min-width: 100px;
-        }
-        button:hover {
-            background-color: #ff6347;
-        }
-        select, input[type="range"] {
-            background-color: #98fb98;
-            min-width: 100px;
-        }
-        /* Ensure canvas fits smaller screens */
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 1.5em;
-            }
-            button, select, input {
-                font-size: 0.9em;
-                padding: 6px;
-            }
         }
     </style>
 </head>
 <body>
-    <h1>Watercolor Painting Fun!</h1>
-    <canvas id="paintingCanvas"></canvas>
-    <div class="controls">
-        <label for="colorPicker">Color: </label>
-        <select id="colorPicker">
-            <option value="rgba(255, 0, 0, 0.3)">Red</option>
-            <option value="rgba(0, 0, 255, 0.3)">Blue</option>
-            <option value="rgba(0, 128, 0, 0.3)">Green</option>
-            <option value="rgba(255, 255, 0, 0.3)">Yellow</option>
-            <option value="rgba(128, 0, 128, 0.3)">Purple</option>
-            <option value="rgba(255, 165, 0, 0.3)">Orange</option>
-        </select>
-        <label for="brushSize">Brush: </label>
-        <input type="range" id="brushSize" min="5" max="30" value="15">
-        <button onclick="clearCanvas()">Clear</button>
+
+    <h1>Water Fun! 💦 Use Your Finger!</h1>
+    
+    <div id="painting-area">
+        <div id="controls">
+            <div class="color-button" style="background-color: red;" onclick="changeColor('rgba(255, 0, 0, 0.1)')" data-color="rgba(255, 0, 0, 0.1)"></div>
+            <div class="color-button" style="background-color: orange;" onclick="changeColor('rgba(255, 165, 0, 0.1)')" data-color="rgba(255, 165, 0, 0.1)"></div>
+            <div class="color-button" style="background-color: yellow;" onclick="changeColor('rgba(255, 255, 0, 0.1)')" data-color="rgba(255, 255, 0, 0.1)"></div>
+            <div class="color-button" style="background-color: green;" onclick="changeColor('rgba(0, 128, 0, 0.1)')" data-color="rgba(0, 128, 0, 0.1)"></div>
+            <div class="color-button" style="background-color: blue;" onclick="changeColor('rgba(0, 0, 255, 0.1)')" data-color="rgba(0, 0, 255, 0.1)"></div>
+            <div class="color-button" style="background-color: purple;" onclick="changeColor('rgba(128, 0, 128, 0.1)')" data-color="rgba(128, 0, 128, 0.1)"></div>
+            <div class="color-button" style="background-color: brown;" onclick="changeColor('rgba(139, 69, 19, 0.1)')" data-color="rgba(139, 69, 19, 0.1)"></div>
+
+            <button id="clearButton" onclick="clearCanvas()">Clear Paper</button>
+        </div>
+
+        <canvas id="watercolorCanvas" width="600" height="400"></canvas>
     </div>
 
     <script>
-        const canvas = document.getElementById('paintingCanvas');
-        const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: false });
-        let painting = false;
-        let lastX = 0, lastY = 0;
+        const canvas = document.getElementById('watercolorCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentColor = 'rgba(255, 0, 0, 0.1)'; 
+        let brushSize = 25; 
 
-        // Set canvas size to fit device
-        function resizeCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * dpr;
-            canvas.height = Math.min(rect.width * 1.2, window.innerHeight - 150) * dpr;
-            ctx.scale(dpr, dpr); // Adjust for high-DPI screens
-            ctx.globalCompositeOperation = 'source-over';
-        }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        // Prevent default touch behaviors
-        document.addEventListener('touchstart', (e) => {
-            if (e.target.tagName !== 'CANVAS') return;
-            e.preventDefault();
-        }, { passive: false });
-        document.addEventListener('touchmove', (e) => {
-            if (e.target.tagName !== 'CANVAS') return;
-            e.preventDefault();
-        }, { passive: false });
-
-        // Start painting
-        canvas.addEventListener('touchstart', (e) => {
-            painting = true;
-            const touch = e.touches[0];
-            lastX = (touch.clientX - canvas.getBoundingClientRect().left) * (canvas.width / canvas.getBoundingClientRect().width);
-            lastY = (touch.clientY - canvas.getBoundingClientRect().top) * (canvas.height / canvas.getBoundingClientRect().height);
-        });
-
-        // Draw on touchmove
-        canvas.addEventListener('touchmove', (e) => {
-            if (!painting) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            const x = (touch.clientX - canvas.getBoundingClientRect().left) * (canvas.width / canvas.getBoundingClientRect().width);
-            const y = (touch.clientY - canvas.getBoundingClientRect().top) * (canvas.height / canvas.getBoundingClientRect().height);
-            draw(x, y);
-        });
-
-        // Stop painting
-        canvas.addEventListener('touchend', () => {
-            painting = false;
-            ctx.beginPath();
-        });
-
+        // --- Core Drawing Logic ---
         function draw(x, y) {
-            const color = document.getElementById('colorPicker').value;
-            const brushSize = document.getElementById('brushSize').value;
+            if (!isDrawing) return; 
 
+            ctx.beginPath();
+            ctx.strokeStyle = currentColor;
             ctx.lineWidth = brushSize;
             ctx.lineCap = 'round';
-            ctx.strokeStyle = color;
+            ctx.lineJoin = 'round';
 
-            // Smooth line drawing
-            ctx.beginPath();
             ctx.moveTo(lastX, lastY);
             ctx.lineTo(x, y);
             ctx.stroke();
 
-            // Watercolor effect: reduced for performance
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.arc(x + (Math.random() - 0.5) * brushSize / 2,
-                        y + (Math.random() - 0.5) * brushSize / 2,
-                        brushSize / 4, 0, Math.PI * 2);
-                ctx.fillStyle = color;
-                ctx.fill();
+            // Update the last position for the next line segment
+            [lastX, lastY] = [x, y];
+        }
+
+        // --- Helper Function to Get Coords ---
+        function getCoords(e) {
+            // Check if it's a touch event
+            if (e.touches && e.touches.length > 0) {
+                // Use the first touch point
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                
+                // Scale coordinates from screen pixels to canvas pixels
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                const x = (touch.clientX - rect.left) * scaleX;
+                const y = (touch.clientY - rect.top) * scaleY;
+                return { x: x, y: y };
+            } 
+            // Otherwise, it's a mouse event
+            else {
+                return { x: e.offsetX, y: e.offsetY };
             }
-
-            lastX = x;
-            lastY = y;
         }
 
+        // --- Universal Event Handlers (Mouse & Touch) ---
+
+        function startDrawing(e) {
+            e.preventDefault(); // Crucial: Stop default mobile actions (like scrolling/pinch-to-zoom)
+            isDrawing = true;
+            const { x, y } = getCoords(e);
+            [lastX, lastY] = [x, y]; 
+        }
+
+        function continueDrawing(e) {
+            e.preventDefault(); // Crucial for smooth drawing
+            if (!isDrawing) return;
+            const { x, y } = getCoords(e);
+            draw(x, y);
+        }
+
+        function stopDrawing(e) {
+            isDrawing = false;
+        }
+
+        // --- Attach Event Listeners ---
+        
+        // Mouse Events (for desktop/mouse input)
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', continueDrawing);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch Events (for Android/iOS)
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', continueDrawing);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing); // Handles interruption
+
+        // --- Responsive Canvas Sizing ---
+        function resizeCanvas() {
+            // Get the current CSS width
+            const styleWidth = canvas.clientWidth;
+            // Maintain a 4:3 aspect ratio (typical for drawing apps)
+            const styleHeight = (styleWidth / 4) * 3;
+
+            // Set the *actual* drawing resolution to a fixed size (e.g., 600x450)
+            // This prevents the brush from looking tiny on high-density screens
+            canvas.height = 450; 
+            canvas.width = 600;
+            
+            // Apply the calculated height to the CSS for display
+            canvas.style.height = `${styleHeight}px`;
+        }
+
+        // --- Control Functions ---
         function clearCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
         }
 
-        // Prevent context menu on long press
-        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        function changeColor(newColor) {
+            currentColor = newColor;
+
+            // Update visual selection
+            document.querySelectorAll('.color-button').forEach(button => {
+                button.classList.remove('selected-color');
+            });
+            const clickedButton = document.querySelector(`[data-color="${newColor}"]`);
+            if (clickedButton) {
+                clickedButton.classList.add('selected-color');
+            }
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set up the initial canvas size
+            resizeCanvas();
+            // Select the first color by default
+            const initialColorButton = document.querySelector('.color-button');
+            if (initialColorButton) {
+                initialColorButton.classList.add('selected-color');
+            }
+        });
+        
+        // Re-size canvas whenever the window changes (e.g., rotating the phone)
+        window.addEventListener('resize', resizeCanvas);
+
     </script>
 </body>
 </html>
