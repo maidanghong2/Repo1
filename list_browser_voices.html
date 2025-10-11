@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Browser Voices Explorer</title>
+  <style>
+    :root{font-family:Inter,Roboto,Arial,sans-serif;color:#111}
+    body{margin:16px;background:#f6fbff}
+    h1{font-size:20px;margin:0 0 8px}
+    .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+    button{padding:8px 10px;border-radius:8px;border:1px solid #cbd5e1;background:white;cursor:pointer}
+    input,select{padding:8px;border-radius:8px;border:1px solid #cbd5e1}
+    .small{padding:6px 8px;font-size:13px}
+    table{width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden}
+    th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left;font-size:13px}
+    th{background:#f0f6fb}
+    tr:last-child td{border-bottom:none}
+    .meta{font-size:12px;color:#475569}
+    .play{display:inline-flex;gap:6px;align-items:center}
+    .badge{padding:4px 6px;border-radius:999px;font-size:12px;border:1px solid #e2e8f0}
+    .center{display:flex;align-items:center;gap:8px}
+    footer{margin-top:12px;font-size:12px;color:#475569}
+    @media (max-width:640px){.toolbar{flex-wrap:wrap}}
+  </style>
+</head>
+<body>
+  <h1>Browser Voices Explorer</h1>
+  <div class="toolbar">
+    <button id="btnFind">Find voices</button>
+    <button id="btnRefresh">Refresh</button>
+    <label class="center">
+      <span class="meta">Filter lang:</span>
+      <select id="filterLang"><option value="">(all)</option></select>
+    </label>
+    <label class="center">
+      <span class="meta">Sample text:</span>
+      <input id="sampleText" value="Hello — this is a quick voice test." size="30" />
+    </label>
+    <label class="center">
+      <input type="checkbox" id="preferLocal" />
+      <span class="meta">Prefer localService</span>
+    </label>
+  </div>
+
+  <table id="voicesTable">
+    <thead>
+      <tr>
+        <th style="width:40%">Name</th>
+        <th style="width:18%">Lang</th>
+        <th style="width:12%">Local</th>
+        <th style="width:15%">Default</th>
+        <th style="width:15%">Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <footer>
+    Tip: Some browsers (Safari/Chrome) deliver voices only after a user gesture — click "Find voices". The list may also change when voices are loaded asynchronously.
+  </footer>
+
+  <script>
+    // Voices Explorer — single-file HTML + JS
+    // Works with the Web Speech API: speechSynthesis and SpeechSynthesisUtterance
+
+    const btnFind = document.getElementById('btnFind');
+    const btnRefresh = document.getElementById('btnRefresh');
+    const sampleText = document.getElementById('sampleText');
+    const filterLang = document.getElementById('filterLang');
+    const preferLocal = document.getElementById('preferLocal');
+    const tableBody = document.querySelector('#voicesTable tbody');
+
+    // Cache of voices
+    let voices = [];
+
+    // Safe getter for voices (some browsers return empty array initially)
+    function getVoicesSafe(){
+      return speechSynthesis.getVoices() || [];
+    }
+
+    function populateLangFilter(list){
+      const langs = Array.from(new Set(list.map(v=>v.lang))).sort();
+      filterLang.innerHTML = '<option value="">(all)</option>' + langs.map(l=>`<option value="${l}">${l}</option>`).join('');
+    }
+
+    function renderTable(){
+      const lang = filterLang.value;
+      const prefer = preferLocal.checked;
+      // optionally sort to prefer localService voices
+      let list = voices.slice();
+      if(prefer){
+        list.sort((a,b)=> (b.localService|0) - (a.localService|0));
+      }
+      if(lang) list = list.filter(v=>v.lang===lang);
+
+      tableBody.innerHTML = list.map(v=>{
+        const name = escapeHtml(v.name);
+        const lang = escapeHtml(v.lang);
+        const local = v.localService ? 'yes' : 'no';
+        const isDefault = v.default ? '✓' : '';
+        const voiceURI = escapeHtml(v.voiceURI || '');
+        return `
+          <tr>
+            <td>
+              <strong>${name}</strong>
+              <div class="meta">URI: <span class="badge">${voiceURI}</span></div>
+            </td>
+            <td>${lang}</td>
+            <td>${local}</td>
+            <td>${isDefault}</td>
+            <td>
+              <div class="play">
+                <button class="playBtn small" data-voiceuri="${voiceURI}">Play</button>
+                <button class="copyBtn small" data-voiceuri="${voiceURI}">Copy URI</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // attach events
+      document.querySelectorAll('.playBtn').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const uri = btn.getAttribute('data-voiceuri');
+          const voice = voices.find(v=>v.voiceURI===uri) || voices.find(v=>v.name===btn.closest('tr').querySelector('strong').textContent);
+          speakSample(voice);
+        });
+      });
+      document.querySelectorAll('.copyBtn').forEach(btn=>{
+        btn.addEventListener('click',async ()=>{
+          const uri = btn.getAttribute('data-voiceuri');
+          try{ await navigator.clipboard.writeText(uri); alert('Copied: '+uri); }catch(e){ prompt('Voice URI (copy manually):',uri); }
+        });
+      });
+    }
+
+    function speakSample(voice){
+      if(!voice){ alert('Voice not found'); return; }
+      const text = sampleText.value || 'Hello';
+      // cancel any current utterances
+      try{ speechSynthesis.cancel(); }catch(e){}
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = voice;
+      // attach simple event handlers
+      u.onstart = ()=>console.log('start', voice.name);
+      u.onend = ()=>console.log('end', voice.name);
+      u.onerror = (e)=>console.warn('speak error', e);
+      speechSynthesis.speak(u);
+    }
+
+    function refreshVoices(){
+      voices = getVoicesSafe();
+      // sort by name for consistent order
+      voices.sort((a,b)=> a.name.localeCompare(b.name));
+      populateLangFilter(voices);
+      renderTable();
+    }
+
+    // Some browsers (Chrome) fire 'voiceschanged' when voices are loaded
+    speechSynthesis.onvoiceschanged = () => {
+      console.log('voiceschanged event');
+      refreshVoices();
+    };
+
+    // Button handlers
+    btnFind.addEventListener('click', ()=>{
+      // user gesture to allow browsers to load voices
+      // some browsers require a small utterance to trigger loading — we'll do a silent quick utterance
+      const test = new SpeechSynthesisUtterance('');
+      // speak a short silent utterance to prompt voice load in some browsers (some ignore empty strings)
+      try{ speechSynthesis.speak(test); }catch(e){ console.warn('speak test failed', e); }
+      // then read voices
+      setTimeout(()=>{
+        refreshVoices();
+        if(voices.length===0){
+          alert('No voices found. Try clicking the button again or check browser settings. In Safari, voices load only after the first real utterance or may require permissions.');
+        }
+      }, 250);
+    });
+
+    btnRefresh.addEventListener('click', ()=>{
+      refreshVoices();
+      alert('Voice list refreshed ('+voices.length+' voices)');
+    });
+
+    filterLang.addEventListener('change', renderTable);
+    preferLocal.addEventListener('change', renderTable);
+
+    // Utility: escape HTML
+    function escapeHtml(s){ return (s+'').replace(/[&<>\"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c)); }
+
+    // Initial attempt to populate (may be empty until user interaction)
+    refreshVoices();
+
+    // Extra: show console hint
+    console.log('Open the HTML file in a browser, click "Find voices". Use Play to hear the sample.');
+  </script>
+</body>
+</html>
