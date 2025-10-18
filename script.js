@@ -147,6 +147,8 @@ let currentSearch = '';
 let showEnglishFirst = false; // Track language display mode
 let recognition = null; // Speech recognition object
 let isRecording = false;
+let language1 = 'fr-FR'; // Default first language (French)
+let language2 = 'en-US'; // Default second language (English)
 
 // Initialize speech recognition
 function initSpeechRecognition() {
@@ -224,7 +226,7 @@ function handleMicClick(sentence, card, index) {
     }
     
     // Set language for recognition
-    recognition.lang = showEnglishFirst ? 'en-US' : 'fr-FR';
+    recognition.lang = showEnglishFirst ? language2 : language1;
     
     // Start recording
     isRecording = true;
@@ -234,7 +236,9 @@ function handleMicClick(sentence, card, index) {
     
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
-        const targetText = showEnglishFirst ? sentence.english : sentence.french;
+        const text1 = sentence.translated1 || sentence.french;
+        const text2 = sentence.translated2 || sentence.english;
+        const targetText = showEnglishFirst ? text2 : text1;
         const similarity = calculateSimilarity(transcript, targetText);
         
         // Display score with color coding
@@ -281,7 +285,13 @@ function handleMicClick(sentence, card, index) {
 }
 
 // Initialize the app
-function init() {
+async function init() {
+    // Initialize translations with default languages (French and English)
+    sentences.forEach(sentence => {
+        sentence.translated1 = sentence.french;
+        sentence.translated2 = sentence.english;
+    });
+    
     renderSentences(sentences);
     setupEventListeners();
     initSpeechRecognition(); // Initialize speech recognition
@@ -304,9 +314,13 @@ function renderSentences(sentenceList) {
         card.className = 'sentence-card';
         card.dataset.index = index;
         
+        // Use translated text if available, otherwise fall back to original
+        const text1 = sentence.translated1 || sentence.french;
+        const text2 = sentence.translated2 || sentence.english;
+        
         // Determine which text to show first based on mode
-        const primaryText = showEnglishFirst ? sentence.english : sentence.french;
-        const secondaryText = showEnglishFirst ? sentence.french : sentence.english;
+        const primaryText = showEnglishFirst ? text2 : text1;
+        const secondaryText = showEnglishFirst ? text1 : text2;
         
         card.innerHTML = `
             <span class="speaker-icon">🔊</span>
@@ -349,20 +363,24 @@ function handleSentenceClick(sentence, card, index) {
         // Cancel any ongoing speech
         window.speechSynthesis.cancel();
 
+        // Use translated text if available
+        const text1 = sentence.translated1 || sentence.french;
+        const text2 = sentence.translated2 || sentence.english;
+
         if (showEnglishFirst) {
-            // In English-first mode: speak English first, then French
-            speakSentence(sentence.english, 'en-US');
-            const englishDelay = sentence.english.length * 50 + 800;
+            // In second-language-first mode: speak language2 first, then language1
+            speakSentence(text2, language2);
+            const delay2 = text2.length * 50 + 800;
             setTimeout(() => {
-                speakSentence(sentence.french, 'fr-FR');
-            }, englishDelay);
+                speakSentence(text1, language1);
+            }, delay2);
         } else {
-            // In French-first mode: speak French first, then English
-            speakSentence(sentence.french, 'fr-FR');
-            const frenchDelay = sentence.french.length * 50 + 800;
+            // In first-language-first mode: speak language1 first, then language2
+            speakSentence(text1, language1);
+            const delay1 = text1.length * 50 + 800;
             setTimeout(() => {
-                speakSentence(sentence.english, 'en-US');
-            }, frenchDelay);
+                speakSentence(text2, language2);
+            }, delay1);
         }
     }
 }
@@ -388,18 +406,9 @@ function speakSentence(text, lang) {
     }, 100);
 }
 
-// Toggle language display mode
+// Toggle language display mode (swap which language shows first)
 function toggleLanguageMode() {
     showEnglishFirst = !showEnglishFirst;
-    const button = document.getElementById('languageSwitch');
-    
-    if (showEnglishFirst) {
-        button.textContent = '🔄 Show French First';
-        button.classList.add('english-mode');
-    } else {
-        button.textContent = '🔄 Show English First';
-        button.classList.remove('english-mode');
-    }
     
     // Re-render all sentences with new mode
     filterSentences();
@@ -410,6 +419,8 @@ function setupEventListeners() {
     const searchBox = document.getElementById('searchBox');
     const categoryFilter = document.getElementById('categoryFilter');
     const languageSwitch = document.getElementById('languageSwitch');
+    const language1Select = document.getElementById('language1Select');
+    const language2Select = document.getElementById('language2Select');
 
     searchBox.addEventListener('input', (e) => {
         currentSearch = e.target.value.toLowerCase();
@@ -422,6 +433,104 @@ function setupEventListeners() {
     });
 
     languageSwitch.addEventListener('click', toggleLanguageMode);
+    
+    language1Select.addEventListener('change', async (e) => {
+        language1 = e.target.value;
+        // Cancel any ongoing speech when language changes
+        window.speechSynthesis.cancel();
+        // Translate sentences to new language
+        await translateSentences();
+    });
+    
+    language2Select.addEventListener('change', async (e) => {
+        language2 = e.target.value;
+        // Cancel any ongoing speech when language changes
+        window.speechSynthesis.cancel();
+        // Translate sentences to new language
+        await translateSentences();
+    });
+}
+
+// Translate sentences using Google Translate API (via MyMemory or LibreTranslate)
+async function translateText(text, targetLang) {
+    try {
+        // Extract language code (e.g., 'fr' from 'fr-FR')
+        const langCode = targetLang.split('-')[0];
+        
+        // Using MyMemory Translation API (free, no API key required)
+        const response = await fetch(
+            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${langCode}`
+        );
+        
+        const data = await response.json();
+        
+        if (data.responseStatus === 200 && data.responseData) {
+            return data.responseData.translatedText;
+        }
+        
+        // Fallback: return original text if translation fails
+        return text;
+    } catch (error) {
+        console.error('Translation error:', error);
+        return text;
+    }
+}
+
+// Translate all sentences to selected languages
+async function translateSentences() {
+    const langCode1 = language1.split('-')[0];
+    const langCode2 = language2.split('-')[0];
+    
+    // Show loading indicator
+    const sentenceGrid = document.getElementById('sentenceGrid');
+    sentenceGrid.innerHTML = '<div style="text-align: center; padding: 40px; font-size: 1.5em; color: #4A90E2;">Translating... 🌐</div>';
+    
+    // Only translate if languages are not French or English (we have those already)
+    const needsTranslation = langCode1 !== 'fr' && langCode1 !== 'en' || langCode2 !== 'fr' && langCode2 !== 'en';
+    
+    if (needsTranslation) {
+        // Translate sentences in batches to avoid overwhelming the API
+        const batchSize = 10;
+        for (let i = 0; i < sentences.length; i += batchSize) {
+            const batch = sentences.slice(i, i + batchSize);
+            
+            await Promise.all(batch.map(async (sentence) => {
+                // Translate to language1 if not French
+                if (langCode1 !== 'fr') {
+                    if (langCode1 === 'en') {
+                        sentence.translated1 = sentence.english;
+                    } else {
+                        sentence.translated1 = await translateText(sentence.english, language1);
+                    }
+                } else {
+                    sentence.translated1 = sentence.french;
+                }
+                
+                // Translate to language2 if not English
+                if (langCode2 !== 'en') {
+                    if (langCode2 === 'fr') {
+                        sentence.translated2 = sentence.french;
+                    } else {
+                        sentence.translated2 = await translateText(sentence.english, language2);
+                    }
+                } else {
+                    sentence.translated2 = sentence.english;
+                }
+            }));
+            
+            // Small delay between batches to respect API rate limits
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    } else {
+        // No translation needed, use original French/English
+        sentences.forEach(sentence => {
+            sentence.translated1 = langCode1 === 'fr' ? sentence.french : sentence.english;
+            sentence.translated2 = langCode2 === 'en' ? sentence.english : sentence.french;
+        });
+    }
+    
+    // Re-render sentences with translations
+    filterSentences();
 }
 
 // Filter sentences based on search and category
@@ -437,7 +546,9 @@ function filterSentences() {
     if (currentSearch) {
         filtered = filtered.filter(sentence => 
             sentence.french.toLowerCase().includes(currentSearch) ||
-            sentence.english.toLowerCase().includes(currentSearch)
+            sentence.english.toLowerCase().includes(currentSearch) ||
+            (sentence.translated1 && sentence.translated1.toLowerCase().includes(currentSearch)) ||
+            (sentence.translated2 && sentence.translated2.toLowerCase().includes(currentSearch))
         );
     }
 
